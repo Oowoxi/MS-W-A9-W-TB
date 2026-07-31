@@ -87,7 +87,7 @@ URLS = {
     "جش": "https://raw.githubusercontent.com/BoulahiaAhmed/Arabic-Quotes-Dataset/main/Arabic_Quotes.csv",
     "شك": "https://raw.githubusercontent.com/AL3ATEL/txt-telegram-5/refs/heads/main/3amh.txt",
     "ويكي": "https://raw.githubusercontent.com/AL3ATEL/Wwweeeke/refs/heads/main/m8alatweke.txt",
-    "مس": "https://drive.google.com/file/d/1eM5wgAiyxRNTAeXsEWgnD-zRGjEIJhBx/view?usp=drivesdk",
+    "مس": "https://drive.google.com/file/d/1BT4mnhBNsHDw-rObSF1M1YXhFUMdJRmt/view?usp=drivesdk",
     "دبل": "https://raw.githubusercontent.com/AL3ATEL/3ks---dbl---trbl---fkk-/refs/heads/main/N9a8sam.txt",
     "تر": "https://raw.githubusercontent.com/AL3ATEL/3ks---dbl---trbl---fkk-/refs/heads/main/N9a8sam.txt",
     "عكس": "https://raw.githubusercontent.com/AL3ATEL/3ks---dbl---trbl---fkk-/refs/heads/main/N9a8sam.txt",
