@@ -22,7 +22,7 @@ REQUIRED_CHANNEL_LINK = "https://t.me/vvnusn"
 BOT_COMMAND_TEXTS = {
     "عرض", "مقالات", "بوت", "تفعيل الدقة", "تعطيل الدقة", "عرض جميع الاوامر", "جميع الاوامر", "الاوامر كاملة",
     "خصص", "المحفوظ", "المستخدمين", "المحظورين", "عرض الكل", "الإشراف", "إدارة", "اداره", "ادارة", "ايديه",
-    "جمم", "ويكي", "صج", "شك", "جش", "قص", "نص", "كرر", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "e", "رق", "حر", "جب", "ريست", "تلقائي",
+    "جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "كرر", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "e", "رق", "حر", "جب", "ريست", "تلقائي",
     "الصدارة", "توب", "أيدي الصدارة", "ايدي الصدارة", "أيدي صدارة الجوال", "ايدي صدارة الجوال", "أيدي صدارة خارجي", "ايدي صدارة خارجي",
     "باند", "تقييد", "كتم", "الغاء تقييد", "الغاء باند", "فك باند", "طرد", "الغاء كتم"
 }
@@ -87,6 +87,7 @@ URLS = {
     "جش": "https://raw.githubusercontent.com/BoulahiaAhmed/Arabic-Quotes-Dataset/main/Arabic_Quotes.csv",
     "شك": "https://raw.githubusercontent.com/AL3ATEL/txt-telegram-5/refs/heads/main/3amh.txt",
     "ويكي": "https://raw.githubusercontent.com/AL3ATEL/Wwweeeke/refs/heads/main/m8alatweke.txt",
+    "مس": "https://drive.google.com/file/d/1eM5wgAiyxRNTAeXsEWgnD-zRGjEIJhBx/view?usp=drivesdk",
     "دبل": "https://raw.githubusercontent.com/AL3ATEL/3ks---dbl---trbl---fkk-/refs/heads/main/N9a8sam.txt",
     "تر": "https://raw.githubusercontent.com/AL3ATEL/3ks---dbl---trbl---fkk-/refs/heads/main/N9a8sam.txt",
     "عكس": "https://raw.githubusercontent.com/AL3ATEL/3ks---dbl---trbl---fkk-/refs/heads/main/N9a8sam.txt",
@@ -255,7 +256,7 @@ async def send_next_match_sentence(c, uid, opponent_uid, game_id, exclude_sectio
         storage.data["matchmaking_games"][game_id] = game
         storage.save(force=True)
 
-        sections = ["كرر", "ويكي", "شك", "حر"]
+        sections = ["كرر", "ويكي", "مس", "شك", "حر"]
         # اختر قسم مختلف عن الأخير
         if exclude_section is not None and exclude_section in sections:
             sections.remove(exclude_section)
@@ -279,6 +280,14 @@ async def send_next_match_sentence(c, uid, opponent_uid, game_id, exclude_sectio
                 sentence = get_text_with_word_count(managers["ويكي"], word_count)
                 if not sentence:
                     sentence = managers["ويكي"].get()
+                if sentence:
+                    display_text = format_display(sentence)
+        elif chosen_section == "مس":
+            if managers and "مس" in managers:
+                word_count = random.randint(10, 15)
+                sentence = get_text_with_word_count(managers["مس"], word_count)
+                if not sentence:
+                    sentence = managers["مس"].get()
                 if sentence:
                     display_text = format_display(sentence)
         elif chosen_section == "شك":
@@ -333,7 +342,7 @@ async def send_next_match_sentence(c, uid, opponent_uid, game_id, exclude_sectio
         else:
             # حالة احتياطية: لا توجد جملة - جرب قسم آخر
             print(f"[MATCH_SEND] لم توجد جملة من القسم {chosen_section}، محاولة قسم بديل")
-            sections = ["كرر", "ويكي", "شك", "حر"]
+            sections = ["كرر", "ويكي", "مس", "شك", "حر"]
             if chosen_section in sections:
                 sections.remove(chosen_section)
             if exclude_section is not None and exclude_section in sections:
@@ -1188,7 +1197,7 @@ class Storage:
     def enable_all_sections(self, uid):
         """تفعيل جميع الأقسام (عند كتابة ريست بدون قسم محدد)"""
         uid_str = str(uid)
-        all_sections = ["جمم", "ويكي", "صج", "شك", "جش", "قص", "نص", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب", "كرر"]
+        all_sections = ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب", "كرر"]
         if "disabled_sections" not in self.data:
             self.data["disabled_sections"] = {}
         if uid_str not in self.data["disabled_sections"]:
@@ -1204,7 +1213,7 @@ class Storage:
             return
 
         # قائمة الأقسام المعروضة في الصدارة فقط
-        leaderboard_sections = ["كرر", "ويكي", "شك", "جب", "جش", "جمم"]
+        leaderboard_sections = ["كرر", "ويكي", "مس", "شك", "جب", "جش", "جمم"]
         
         # إذا لم يكن القسم في قائمة الصدارة، لا نحفظ النقطة
         if typ not in leaderboard_sections:
@@ -1493,7 +1502,7 @@ class Storage:
         week = self.data["leaderboard_resets"]
 
         # جميع الأقسام (محددة للعرض في الصدارة)
-        all_sections = ["كرر", "ويكي", "شك", "جب", "جش", "جمم"]
+        all_sections = ["كرر", "ويكي", "مس", "شك", "جب", "جش", "جمم"]
 
         # توزيع الجوائز لكلا جهازي: جوال وخارجي
         for device_type in ["جوال", "خارجي"]:
@@ -1707,8 +1716,8 @@ class Storage:
         """حفظ السرعة مع عداد كلي واحد من 12 قسم + كرر منفصل"""
         uid_str = str(uid)
 
-        # الأقسام الـ 12 المسموحة (بدون كرر)
-        allowed_sections = ["ويكي", "جمم", "صج", "نص", "قص", "فكك", "حر", "رق", "عكس", "جش", "شك", "جب"]
+        # الأقسام الـ 13 المسموحة (بدون كرر)
+        allowed_sections = ["ويكي", "مس", "جمم", "صج", "نص", "قص", "فكك", "حر", "رق", "عكس", "جش", "شك", "جب"]
 
         # Fallback إلى JSON (MongoDB معطل في Replit)
         if "average_speeds" not in self.data:
@@ -1817,8 +1826,8 @@ class Storage:
         """الحصول على المتوسط الكلي من 12 قسم"""
         uid_str = str(uid)
 
-        # الأقسام الـ 12
-        allowed_sections = ["ويكي", "جمم", "صج", "نص", "قص", "فكك", "حر", "رق", "عكس", "جش", "شك", "جب"]
+        # الأقسام الـ 13
+        allowed_sections = ["ويكي", "مس", "جمم", "صج", "نص", "قص", "فكك", "حر", "رق", "عكس", "جش", "شك", "جب"]
 
         if "average_speeds" not in self.data or uid_str not in self.data["average_speeds"]:
             return 0
@@ -1847,7 +1856,7 @@ class Storage:
         - أول 20 ثانية: ±20 WPM فقط (من 12 قسم)
         - آخر 10 ثواني (بعد 20): أي خصم متاح
         - إجمالي: 30 ثانية
-        - يستخدم متوسط 12 قسم: ويكي, كرر, جمم, صج, نص, قص, فكك, حر, رق, عكس, جش, شك, جب
+        - يستخدم متوسط 13 قسم: ويكي, مس, كرر, جمم, صج, نص, قص, فكك, حر, رق, عكس, جش, شك, جب
         """
         if "matchmaking_queue" not in self.data:
             self.data["matchmaking_queue"] = []
@@ -3699,6 +3708,7 @@ async def check_and_ban_cheater(
 managers = {
     "جمم": LocalJSONManager("جمم", URLS["جمم"]),
     "ويكي": LocalJSONManager("ويكي", URLS["ويكي"]),
+    "مس": LocalJSONManager("مس", URLS["مس"]),
     "شرط": LocalJSONManager("شرط", URLS["شرط"]),
     "فكك": LocalJSONManager("فكك", URLS["فكك"]),
     "صج": LocalJSONManager("صج", URLS["صج"]),
@@ -3810,6 +3820,7 @@ async def show_bot_sections(u: Update, c: ContextTypes.DEFAULT_TYPE, is_callback
         "- (نص) - 25 مليون جملة عشوائية من مصادر مختلفة\n"
         "- (جمم) - جمل عادية\n"
         "- (ويكي) - جمل ويكيبيديا\n"
+        "- (مس) - جمل مس\n"
         "- (صج) - كلمات عشوائية صعبة\n"
         "- (جب) - كلمات عشوائية سهلة\n"
         "- (شك) - جمل عامية\n"
@@ -3990,6 +4001,7 @@ async def show_all_bot_commands(u: Update, c: ContextTypes.DEFAULT_TYPE):
         "- (نص) - 25 مليون جملة من مصادر متنوعة\n"
         "- (جمم) - جمل عادية وعشوائية\n"
         "- (ويكي) - جمل من ويكيبيديا\n"
+        "- (مس) - جمل مس\n"
         "- (صج) - كلمات صعبة\n"
         "- (جب) - كلمات سهلة\n"
         "- (شك) - جمل عامية/دارجة\n"
@@ -4498,7 +4510,7 @@ async def cmd_stats(u: Update, c: ContextTypes.DEFAULT_TYPE):
     banned_count = len(storage.data["banned"])
 
     stats_details = "\n\nإحصائيات الأقسام:\n"
-    types = ["جمم", "ويكي", "صج", "شك", "جش", "قص", "نص", "جب", "كرر", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر"]
+    types = ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "جب", "كرر", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر"]
 
     total_usage = {}
     for date, commands in storage.data["stats"].items():
@@ -4691,7 +4703,7 @@ async def send_auto_sentence(c: ContextTypes.DEFAULT_TYPE, cid, auto_data):
     selected_section = random.choice(available_sections)
     storage.set_auto_last_section(cid, selected_section)
 
-    if selected_section in ["جمم", "ويكي", "صج", "شك", "جش", "قص", "نص", "فر", "E"]:
+    if selected_section in ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "فر", "E"]:
         sent = managers[selected_section].get()
         storage.save_session(auto_data["uid"], cid, f"تلقائي_{selected_section}", sent, time.time(), sent=True)
         display = format_display(sent)
@@ -4960,7 +4972,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
             shortcut = text.strip()
 
             # قائمة أقسام البوت الأساسية
-            bot_sections = ["جمم", "ويكي", "شرط", "فكك", "صج", "شك", "جش", "دبل", "تر", "عكس", "فر", "E", "قص", "نص", "جب", "كرر", "رق", "حر"]
+            bot_sections = ["جمم", "ويكي", "مس", "شرط", "فكك", "صج", "شك", "جش", "دبل", "تر", "عكس", "فر", "E", "قص", "نص", "جب", "كرر", "رق", "حر"]
 
             # التحقق من أن الاختصار ليس اسم قسم موجود
             if shortcut in bot_sections:
@@ -5420,7 +5432,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
 
     if storage.is_banned(uid):
         commands = ["الصدارة", "جوائزي", "جولة", "فتح جولة", "باند", "الغاء باند", "إذاعة", "اذاعة الخاص", "اذاعة القروبات", "باند سريع", "احصاء", "الإشراف",
-                   "جمم", "ويكي", "صج", "شك", "جش", "كرر", "شرط", "فكك", "دبل", "تر", "عكس", "عرض", "مقالات", "فر", "E", "e", "رق", "حر", "ريست", "تلقائي"]
+                   "جمم", "ويكي", "مس", "صج", "شك", "جش", "كرر", "شرط", "فكك", "دبل", "تر", "عكس", "عرض", "مقالات", "فر", "E", "e", "رق", "حر", "ريست", "تلقائي"]
         is_command = any(text.startswith(cmd) for cmd in commands)
 
         if is_command:
@@ -5705,7 +5717,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
             return
 
         if auto_mode["collecting"]:
-            valid_sections = ["جمم", "ويكي", "صج", "شك", "جش", "قص", "نص", "كرر", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب"]
+            valid_sections = ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "كرر", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب"]
 
             if text in valid_sections:
                 if storage.add_auto_section(cid, text):
@@ -5756,7 +5768,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
                     continue
                 
                 # للأقسام النصية: نقبل أي ترتيب أو تكرار للكلمات إذا كانت كل كلمات الأصل موجودة
-                if section_type in ["جمم", "ويكي", "صج", "شك", "جش", "قص", "نص", "جب", "حر"]:
+                if section_type in ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "جب", "حر"]:
                     base_accuracy = compute_word_based_accuracy(orig, text, "arabic")
                     all_words_present = base_accuracy == 100.0
                     if user_accuracy_on:
@@ -5861,7 +5873,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
                         storage.save_speed_for_section(uid, section_type, wpm)
                         # حفظ الصدارة: للأقسام الستة احفظ فقط عند دقة 100% (بغض النظر عن وضع الدقة)
                         # استثناء: جب حرفين لا يحسب في الصدارة
-                        leaderboard_sections = ["كرر", "ويكي", "شك", "جب", "جش", "جمم"]
+                        leaderboard_sections = ["كرر", "ويكي", "مس", "شك", "جب", "جش", "جمم"]
                         if section_type in leaderboard_sections and accuracy == 100.0:
                             # التحقق من أن جب حرفين لا يدخل الصدارة
                             if section_type == "جب" and user_jab_type.get(uid) == "حرفين":
@@ -6096,10 +6108,10 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
         next_level_cost = storage.get_level_requirement(level + 1)
 
         uid_str = str(uid)
-        sections = ["ويكي", "كرر", "جمم", "صج", "نص", "قص", "فكك", "حر", "رق", "عكس", "جش", "شك", "جب"]
+        sections = ["ويكي", "مس", "كرر", "جمم", "صج", "نص", "قص", "فكك", "حر", "رق", "عكس", "جش", "شك", "جب"]
 
-        # الحصول على متوسط السرعة من 12 قسم
-        allowed_sections = ["ويكي", "جمم", "صج", "نص", "قص", "فكك", "حر", "رق", "عكس", "جش", "شك", "جب"]
+        # الحصول على متوسط السرعة من 13 قسم
+        allowed_sections = ["ويكي", "مس", "جمم", "صج", "نص", "قص", "فكك", "حر", "رق", "عكس", "جش", "شك", "جب"]
         section_averages = []
         for section in allowed_sections:
             avg = storage.get_average_speed(uid, section)
@@ -6390,7 +6402,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
             
             device_type = "جوال" if device_type_text == "الجوال" else "خارجي"
             
-            valid_sections = ["ويكي", "جمم", "صج", "شك", "جش", "قص", "نص", "كرر", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب"]
+            valid_sections = ["ويكي", "مس", "جمم", "صج", "شك", "جش", "قص", "نص", "كرر", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب"]
             if section not in valid_sections:
                 await u.message.reply_text(f"القسم '{section}' غير موجود\nالأقسام المتاحة: {', '.join(valid_sections)}")
                 return
@@ -6890,7 +6902,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
         # عرض أيدي الصدارة لصدارة الجوال
         uid = u.effective_user.id
 
-        types = ["كرر", "ويكي", "شك", "جب", "جش", "حر"]
+        types = ["كرر", "ويكي", "مس", "شك", "جب", "جش", "حر"]
         sections = []
 
         for typ in types:
@@ -6915,7 +6927,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
         # عرض أيدي الصدارة لصدارة خارجي
         uid = u.effective_user.id
 
-        types = ["كرر", "ويكي", "شك", "جب", "جش", "حر"]
+        types = ["كرر", "ويكي", "مس", "شك", "جب", "جش", "حر"]
         sections = []
 
         for typ in types:
@@ -6944,7 +6956,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
         if storage.has_device_type(uid):
             user_device_type = storage.get_device_type(uid)
 
-            types = ["كرر", "ويكي", "شك", "جب", "جش", "حر"]
+            types = ["كرر", "ويكي", "مس", "شك", "جب", "جش", "حر"]
             sections = []
 
             for typ in types:
@@ -7284,7 +7296,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
 
     # معالجة "ريست" مع أو بدون قسم معين
     if text == "ريست" or text.startswith("ريست "):
-        all_sections = ["جمم", "ويكي", "صج", "شك", "جش", "قص", "نص", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب", "كرر", "خصص"]
+        all_sections = ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب", "كرر", "خصص"]
 
         # التحقق من وجود قسم محدد
         parts = text.split()
@@ -7373,7 +7385,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
 
     if text.startswith("ريست "):
         section = text[5:].strip()
-        if section in ["جمم", "ويكي", "صج", "شك", "جش", "قص", "نص", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب", "كرر"]:
+        if section in ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب", "كرر"]:
             if section == "رق":
                 storage.save_preference(uid, "رق_عدد", None)
                 await u.message.reply_text(f"تم إعادة تعيين تفضيلات القسم ({section}) بنجاح\nالآن سيتم إرسال الأرقام بشكلها الطبيعي العشوائي")
@@ -7398,7 +7410,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
         storage.log_cmd("عشوائي")
         
         # قائمة الأقسام التي يختارها عشوائياً
-        random_sections = ["ويكي", "كرر", "جمم", "جش", "جب", "شك", "حر"]
+        random_sections = ["ويكي", "مس", "كرر", "جمم", "جش", "جب", "شك", "حر"]
         
         # الحصول على الفهرس الحالي للمستخدم، أو تعيينه إلى 0 إذا لم يكن موجوداً
         if uid not in user_random_section_state:
@@ -7419,21 +7431,21 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
 
     command, word_count = extract_number_from_text(text)
 
-    game_commands = ["جمم", "ويكي", "صج", "شك", "جش", "قص", "نص", "فر", "E", "e", "رق", "حر", "جب", "كرر", "شرط", "فكك", "دبل", "تر", "عكس"]
+    game_commands = ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "فر", "E", "e", "رق", "حر", "جب", "كرر", "شرط", "فكك", "دبل", "تر", "عكس"]
     is_game_command = (command in game_commands or text in game_commands)
 
     if is_game_command:
         if not await can_bot_send(cid):
             return
 
-    if command in ["جمم", "ويكي", "صج", "شك", "جش", "قص", "نص", "جب"] or text in ["جمم", "ويكي", "صج", "شك", "جش", "قص", "نص", "جب"]:
+    if command in ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "جب"] or text in ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "جب"]:
         section = command if word_count else text
         storage.log_cmd(section)
 
         if word_count and 1 <= word_count <= 60:
             storage.save_preference(uid, section, word_count)
             # تحكم الصدارة حسب عدد الكلمات للأقسام المعروضة في الصدارة
-            leaderboard_sections = ["كرر", "ويكي", "شك", "جب", "جش", "جمم"]
+            leaderboard_sections = ["كرر", "ويكي", "مس", "شك", "جب", "جش", "جمم"]
             if section in leaderboard_sections:
                 if word_count >= 10:
                     storage.enable_section(uid, section)
@@ -7637,7 +7649,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
         return
 
     # معالج عام لتحديد عدد الكلمات لأي قسم (مثل: جمم 12، مق 15، إلخ)
-    all_sections = ["جمم", "ويكي", "صج", "شك", "جش", "قص", "نص", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب", "كرر"]
+    all_sections = ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب", "كرر"]
     for section in all_sections:
         if text.startswith(f"{section} "):
             try:
@@ -8198,7 +8210,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
 
         try:
             user_accuracy_on = is_accuracy_enabled_for(uid)
-            if typ in ["جمم", "ويكي", "صج", "شك", "جش", "قص", "نص", "جب", "حر"]:
+            if typ in ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "جب", "حر"]:
                 # دقة مبنية على الكلمات تسمح بتغيير الترتيب والتكرار الصحيح
                 base_accuracy = compute_word_based_accuracy(orig, text, "arabic")
                 all_words_present = base_accuracy == 100.0
@@ -8494,7 +8506,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
                     match_result = bool(valid)
                     if match_result:
                         accuracy = 100.0
-                elif chosen_section in ["ويكي", "شك", "جب", "جش", "قص", "نص", "جمم", "صج", "حر"]:
+                elif chosen_section in ["ويكي", "مس", "شك", "جب", "جش", "قص", "نص", "جمم", "صج", "حر"]:
                     base_accuracy = compute_word_based_accuracy(orig, text, "arabic")
                     all_words_present = base_accuracy == 100.0
                     if user_accuracy_on:
@@ -8540,7 +8552,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
                                 other_device_type = storage.get_device_type(other_uid)
                                 storage.save_speed_for_section(other_uid, chosen_section, other_wpm)
                                 # حفظ الصدارة: للأقسام الستة احفظ فقط عند دقة 100%
-                                leaderboard_sections = ["كرر", "ويكي", "شك", "جب", "جش", "جمم"]
+                                leaderboard_sections = ["كرر", "ويكي", "مس", "شك", "جب", "جش", "جمم"]
                                 if chosen_section in leaderboard_sections and accuracy == 100.0:
                                     storage.update_score(other_uid, chosen_section, other_wpm, other_device_type)
                         else:
@@ -8556,7 +8568,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
                                 other_device_type = storage.get_device_type(other_uid)
                                 storage.save_speed_for_section(other_uid, chosen_section, other_wpm)
                                 # حفظ الصدارة: للأقسام الستة احفظ فقط عند دقة 100%
-                                leaderboard_sections = ["كرر", "ويكي", "شك", "جب", "جش", "جمم"]
+                                leaderboard_sections = ["كرر", "ويكي", "مس", "شك", "جب", "جش", "جمم"]
                                 if chosen_section in leaderboard_sections and accuracy == 100.0:
                                     storage.update_score(other_uid, chosen_section, other_wpm, other_device_type)
                         # لا توجد إجابة معلقة - الإجابة الحالية فائزة
@@ -8574,7 +8586,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
                         storage.save_speed_for_section(uid, chosen_section, wpm)
                         # حفظ الصدارة: للأقسام الستة احفظ فقط عند دقة 100%
                         # استثناء: جب حرفين لا يحسب في الصدارة
-                        leaderboard_sections = ["كرر", "ويكي", "شك", "جب", "جش", "جمم"]
+                        leaderboard_sections = ["كرر", "ويكي", "مس", "شك", "جب", "جش", "جمم"]
                         if chosen_section in leaderboard_sections and accuracy == 100.0:
                             # التحقق من أن جب حرفين لا يدخل الصدارة
                             if chosen_section == "جب" and user_jab_type.get(uid) == "حرفين":
@@ -8732,7 +8744,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
             # للأقسام الستة المرئية في الصدارة: احفظ دائماً إذا كانت الإجابة مقبولة
             # و الدقة >= 100% (أي مقبولة بالكامل)
             # استثناء: جب حرفين لا يحسب في الصدارة
-            leaderboard_sections = ["كرر", "ويكي", "شك", "جب", "جش", "جمم"]
+            leaderboard_sections = ["كرر", "ويكي", "مس", "شك", "جب", "جش", "جمم"]
             if score_typ in leaderboard_sections:
                 # للأقسام الستة: احفظ عندما تكون الإجابة مقبولة (all_words_present أو accuracy >= 80%)
                 # التحقق من أن جب حرفين لا يدخل الصدارة
@@ -8917,7 +8929,7 @@ async def periodic_nass_update():
 
 async def display_leaderboard(query, device_type):
     """عرض الصدارة حسب نوع الجهاز"""
-    types = ["كرر", "ويكي", "شك", "جب", "جش", "حر"]
+    types = ["كرر", "ويكي", "مس", "شك", "جب", "جش", "حر"]
     sections = []
 
     for typ in types:
@@ -8999,7 +9011,7 @@ async def handle_callback(u: Update, c: ContextTypes.DEFAULT_TYPE):
         if leaderboard_type == "ايدي_صدارة":
             # إرسال ايدي الصدارة
             user_device_type = "جوال"
-            types = ["كرر", "ويكي", "شك", "جب", "جش"]
+            types = ["كرر", "ويكي", "مس", "شك", "جب", "جش"]
             sections = []
             for typ in types:
                 lb = storage.get_leaderboard(typ, device_type=user_device_type)
@@ -9045,7 +9057,7 @@ async def handle_callback(u: Update, c: ContextTypes.DEFAULT_TYPE):
         if leaderboard_type == "ايدي_صدارة":
             # إرسال ايدي الصدارة
             user_device_type = "خارجي"
-            types = ["كرر", "ويكي", "شك", "جب", "جش"]
+            types = ["كرر", "ويكي", "مس", "شك", "جب", "جش"]
             sections = []
             for typ in types:
                 lb = storage.get_leaderboard(typ, device_type=user_device_type)
@@ -9415,7 +9427,7 @@ async def handle_delete_leaderboard(u: Update, c: ContextTypes.DEFAULT_TYPE):
             return True
         
         # التحقق من اسم القسم
-        valid_sections = ["ويكي", "جمم", "صج", "شك", "جش", "قص", "نص", "كرر", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب"]
+        valid_sections = ["ويكي", "مس", "جمم", "صج", "شك", "جش", "قص", "نص", "كرر", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب"]
         if section not in valid_sections:
             await u.message.reply_text(f"القسم غير صحيح. الأقسام المتاحة:\n{', '.join(valid_sections)}")
             return True
