@@ -22,7 +22,7 @@ REQUIRED_CHANNEL_LINK = "https://t.me/vvnusn"
 BOT_COMMAND_TEXTS = {
     "عرض", "مقالات", "بوت", "تفعيل الدقة", "تعطيل الدقة", "عرض جميع الاوامر", "جميع الاوامر", "الاوامر كاملة",
     "خصص", "المحفوظ", "المستخدمين", "المحظورين", "عرض الكل", "الإشراف", "إدارة", "اداره", "ادارة", "ايديه",
-    "جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "كرر", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "e", "رق", "حر", "جب", "ريست", "تلقائي",
+    "جمم", "ويكي", "مس", "اص", "صج", "شك", "جش", "قص", "نص", "كرر", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "e", "رق", "حر", "جب", "ريست", "تلقائي",
     "الصدارة", "توب", "أيدي الصدارة", "ايدي الصدارة", "أيدي صدارة الجوال", "ايدي صدارة الجوال", "أيدي صدارة خارجي", "ايدي صدارة خارجي",
     "باند", "تقييد", "كتم", "الغاء تقييد", "الغاء باند", "فك باند", "طرد", "الغاء كتم"
 }
@@ -1197,7 +1197,7 @@ class Storage:
     def enable_all_sections(self, uid):
         """تفعيل جميع الأقسام (عند كتابة ريست بدون قسم محدد)"""
         uid_str = str(uid)
-        all_sections = ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب", "كرر"]
+        all_sections = ["جمم", "ويكي", "مس", "اص", "صج", "شك", "جش", "قص", "نص", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب", "كرر"]
         if "disabled_sections" not in self.data:
             self.data["disabled_sections"] = {}
         if uid_str not in self.data["disabled_sections"]:
@@ -3017,6 +3017,197 @@ def normalize_english(txt):
     txt = re.sub(r'[^\w\s]', '', txt)
     return re.sub(r'\s+', ' ', txt).strip()
 
+# ==========================================================
+#            قسم (اص) - الزخرفة الحرفية
+# ==========================================================
+# يستورد جمل قسم (مس) ثم:
+#   1) يصفّي الجملة من كل الرموز والأرقام فما يبقى إلا حروف عربية
+#   2) يستبدل حروف معينة بحروف مزخرفة حسب قواعد المستخدم
+#   3) يضيف تطويلات (ـ) حسب قواعد كل حرف
+# عند التحقق: المستخدم يكتب الجملة الأصلية (قبل الزخرفة) بشكلها العادي.
+# إذا كتب أي حرف مزخرف أو تطويل => لا تُحسب السرعة إطلاقاً.
+
+TATWEEL = '\u0640'  # ـ
+
+# الحروف المزخرفة المستخدمة في قسم اص (لا يجوز للمستخدم كتابتها)
+AS_FANCY_CHARS = {
+    '\u0672',  # ٲ  بديل أ
+    '\u0673',  # ٳ  بديل إ
+    '\u0695',  # ڕ  بديل ر
+    '\u08A5',  # ࢥ  بديل ق
+    '\u067D',  # ٽ  بديل ث
+    '\u06BA',  # ں  بديل ن (مع ضمة)
+    '\u06B6',  # ڶ  بديل ل
+    '\u06C2',  # ۂ  بديل ه/ة
+    '\u06C6',  # ۆ  بديل و/ؤ
+    '\u0684',  # ڄ  بديل ج
+    '\u0765',  # ݥ  بديل م (احتياطي)
+    '\u08A0',  # ࢠ  بديل ب (احتياطي)
+    '\u06AD',  # ڭ  بديل ك (احتياطي)
+}
+
+# خريطة الاستبدال الأساسية: أصلي -> مزخرف
+AS_REPLACE_MAP = {
+    'أ': '\u0672',   # ٲ
+    'إ': '\u0673',   # ٳ
+    'ر': '\u0695',   # ڕ
+    'ق': '\u08A5',   # ࢥ
+    'ث': '\u067D',   # ٽ
+    'ن': '\u06BA\u064F',  # ںُ  (نون غنة + ضمة)
+    'ل': '\u06B6',   # ڶ
+    'ه': '\u06C2',   # ۂ
+    'ة': '\u06C2',   # ۂ
+    'و': '\u06C6',   # ۆ
+    'ؤ': '\u06C6',   # ۆ
+    'ج': '\u0684',   # ڄ
+}
+
+# الحروف التي تأخذ تطويلتين بعدها (إذا لم تكن آخر الكلمة) - قاعدة "القاف"
+AS_TATWEEL_AFTER = {'\u08A5', '\u06B6', '\u0684', '\u0765', '\u08A0', '\u06AD'}
+
+# الحروف التي تأخذ تطويلتين قبلها - قاعدة "الواو" (ۆ و ڕ)
+AS_TATWEEL_BEFORE = {'\u06C6', '\u0695'}
+
+# حروف لا تقبل الالتصاق بما بعدها (لا يمكن وصلها من اليسار)
+AS_NON_CONNECTING = set(
+    'ادذرزوؤإأآاٱةءئ'
+    '\u0672'  # ٲ
+    '\u0673'  # ٳ
+    '\u0695'  # ڕ
+    '\u06C6'  # ۆ
+    '\u06C2'  # ۂ
+)
+
+# الحروف التي لا يُمدّ بعدها ما يليها (ٽ ، ںُ ، ٳ ، ٲ) وأصولها العادية (ث ، ن ، إ ، أ)
+AS_NO_TATWEEL_AFTER_THESE = {
+    '\u067D',  # ٽ
+    '\u06BA',  # ں
+    '\u0673',  # ٳ
+    '\u0672',  # ٲ
+    'ث', 'ن', 'إ', 'أ',
+}
+
+# الحروف التي تُستبدل فقط في نهاية الكلمة وغير مربوطة بما قبلها: ه/ة و ن و ث
+AS_END_ONLY_LETTERS = {'ه', 'ة', 'ن', 'ث'}
+
+
+def as_strip_to_arabic(txt):
+    """تصفية الجملة: حذف كل الرموز والأرقام والحروف اللاتينية، ولا يبقى إلا حروف عربية ومسافات"""
+    if not txt:
+        return ""
+    txt = txt.replace(TATWEEL, '')
+    # حذف التشكيل
+    txt = re.sub(r'[\u064B-\u065F\u0670]', '', txt)
+    # حذف كل ما ليس حرفاً عربياً أو مسافة
+    txt = re.sub(r'[^\u0621-\u064A\s]', ' ', txt)
+    return re.sub(r'\s+', ' ', txt).strip()
+
+
+def _as_decorate_word(word):
+    """زخرفة كلمة واحدة حسب قواعد قسم اص"""
+    if not word:
+        return word
+
+    chars = list(word)
+    n = len(chars)
+    out = []
+
+    def push_tatweel():
+        """إضافة تطويلتين مع منع التكرار (لا تتجاوز تطويلتين متتاليتين)"""
+        if out and out[-1].endswith(TATWEEL):
+            return
+        out.append(TATWEEL * 2)
+
+    def prev_emitted_letter():
+        """آخر حرف فعلي تمت كتابته في المخرجات (تجاهل التطويل والتشكيل)"""
+        for piece in reversed(out):
+            for cch in reversed(piece):
+                if cch == TATWEEL or '\u064B' <= cch <= '\u0652':
+                    continue
+                return cch
+        return None
+
+    def can_attach_before():
+        """هل يمكن مدّ الحرف الحالي؟ يعتمد على الحرف السابق المكتوب فعلاً"""
+        pe = prev_emitted_letter()
+        if pe is None:
+            return False
+        if pe in AS_NON_CONNECTING:
+            return False           # حرف لا يقبل الالتصاق مثل ر / ة / ز / و
+        if pe in AS_NO_TATWEEL_AFTER_THESE:
+            return False           # لا تمد بعد ٽ ، ںُ ، ٳ ، ٲ
+        return True
+
+    for i, ch in enumerate(chars):
+        is_last = (i == n - 1)
+        is_first = (i == 0)
+        prev_orig = chars[i - 1] if i > 0 else None
+
+        # --- حروف ه/ة و ن و ث: تُستبدل فقط في آخر الكلمة وغير مربوطة بما قبلها ---
+        if ch in AS_END_ONLY_LETTERS:
+            if is_last and prev_orig is not None and prev_orig in AS_NON_CONNECTING:
+                out.append(AS_REPLACE_MAP[ch])
+            else:
+                out.append(ch)
+            continue
+
+        # --- الألف (ا/أ/إ/آ): أول الكلمة أو آخرها فقط، ولا تأتي في الوسط ---
+        if ch in ('ا', 'أ', 'إ', 'آ'):
+            if is_first:
+                # أول الكلمة: أ -> ٲ ، إ -> ٳ ، والألف العادية تبقى ألف
+                out.append(AS_REPLACE_MAP.get(ch, ch))
+            elif is_last and n > 1:
+                # ألف أخيرة (مثل رجالها -> رجالهٲ) مع تمديدين قبلها
+                if can_attach_before():
+                    push_tatweel()
+                out.append(AS_REPLACE_MAP.get(ch, '\u0672'))
+            else:
+                # وسط الكلمة: تبقى كما هي
+                out.append(ch)
+            continue
+
+        # --- حرفا و/ؤ و ر: تطويلتان قبلهما بشروط ---
+        if ch in ('و', 'ؤ', 'ر'):
+            fancy = AS_REPLACE_MAP[ch]
+            # لا تمد إذا كانت أول الكلمة، ولا إذا كان ما قبلها لا يقبل الالتصاق،
+            # ولا إذا كان قبلها ٽ / ںُ / ٳ / ٲ
+            if not is_first and can_attach_before():
+                push_tatweel()
+            out.append(fancy)
+            continue
+
+        # --- بقية الحروف المستبدلة (ق، ل، ج) ---
+        if ch in AS_REPLACE_MAP:
+            fancy = AS_REPLACE_MAP[ch]
+            out.append(fancy)
+            # تطويلتان بعد الحرف إذا لم يكن آخر الكلمة
+            if fancy in AS_TATWEEL_AFTER and not is_last:
+                push_tatweel()
+            continue
+
+        # حرف عادي يبقى كما هو
+        out.append(ch)
+
+    return ''.join(out)
+
+
+def as_decorate_sentence(txt):
+    """تصفية الجملة ثم زخرفتها بالكامل (قسم اص)"""
+    cleaned = as_strip_to_arabic(txt)
+    if not cleaned:
+        return ""
+    return ' '.join(_as_decorate_word(w) for w in cleaned.split())
+
+
+def as_user_used_fancy(txt):
+    """True إذا كتب المستخدم أي حرف مزخرف أو تطويل - عندها لا تُحسب سرعته"""
+    if not txt:
+        return False
+    if TATWEEL in txt:
+        return True
+    return any(ch in AS_FANCY_CHARS for ch in txt)
+
+
 def format_display(s):
     s = s.replace('\u0640', '')
     return ' ، '.join(s.split())
@@ -3724,6 +3915,38 @@ managers = {
     "جب": WajabManager(JAB_WORDS, min_length=7, max_length=20)
 }
 
+
+class AsManager:
+    """مدير قسم (اص) - يستورد الجمل من قسم (مس) ويصفّيها من الرموز والأرقام
+
+    الجملة المخزنة (المرجعية) تكون نظيفة بدون زخرفة، والمعروضة للمستخدم مزخرفة.
+    """
+    def __init__(self, source_manager):
+        self.source = source_manager
+        self.section_name = "اص"
+
+    def get(self):
+        """يرجع الجملة الأصلية النظيفة (بدون زخرفة) - وهي المرجع لحساب الدقة"""
+        for _ in range(20):
+            raw = self.source.get()
+            cleaned = as_strip_to_arabic(raw)
+            if cleaned and len(cleaned.split()) >= 2:
+                return cleaned
+        return as_strip_to_arabic(self.source.get()) or "لا توجد جمل حالياً"
+
+    def get_multiple(self, count=2):
+        results = []
+        for raw in self.source.get_multiple(count * 2):
+            cleaned = as_strip_to_arabic(raw)
+            if cleaned:
+                results.append(cleaned)
+            if len(results) >= count:
+                break
+        return results
+
+
+managers["اص"] = AsManager(managers["مس"])
+
 async def require_channel_membership(u: Update, c: ContextTypes.DEFAULT_TYPE):
     """يضمن أن المستخدم مشترك في القناة المطلوبة قبل استخدام البوت"""
     if not u.effective_user:
@@ -3821,6 +4044,7 @@ async def show_bot_sections(u: Update, c: ContextTypes.DEFAULT_TYPE, is_callback
         "- (جمم) - جمل عادية\n"
         "- (ويكي) - جمل ويكيبيديا\n"
         "- (مس) - جمل مس\n"
+        "- (اص) - جمل مس بحروف مزخرفة (اكتبها بحروفها العادية)\n"
         "- (صج) - كلمات عشوائية صعبة\n"
         "- (جب) - كلمات عشوائية سهلة\n"
         "- (شك) - جمل عامية\n"
@@ -3911,6 +4135,8 @@ async def show_bot_commands(u: Update, c: ContextTypes.DEFAULT_TYPE, is_callback
         "(جب خمسه حروف) يخلي جب ينزل كلمات من خمس حروف \n"
         "(جب مختلط) من كل الأقسام كلمات \n"
         "(جب قديم) نفس الجب القديم \n"
+        "-----------------------------\n"
+        "(اص) جمل قسم مس بحروف مزخرفة - اكتبها بحروفها العادية بدون زخرفة ولا تطويل\n"
         "-----------------------------\n"
         "اكتب اسم قسم بعده رقم يحدد عدد كلمات المقالة - (*اي قسم* 40)\n\n"
         "((ريست) - يرجع كل الأقسام زي ما كانت)\n"
@@ -4510,7 +4736,7 @@ async def cmd_stats(u: Update, c: ContextTypes.DEFAULT_TYPE):
     banned_count = len(storage.data["banned"])
 
     stats_details = "\n\nإحصائيات الأقسام:\n"
-    types = ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "جب", "كرر", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر"]
+    types = ["جمم", "ويكي", "مس", "اص", "صج", "شك", "جش", "قص", "نص", "جب", "كرر", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر"]
 
     total_usage = {}
     for date, commands in storage.data["stats"].items():
@@ -4972,7 +5198,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
             shortcut = text.strip()
 
             # قائمة أقسام البوت الأساسية
-            bot_sections = ["جمم", "ويكي", "مس", "شرط", "فكك", "صج", "شك", "جش", "دبل", "تر", "عكس", "فر", "E", "قص", "نص", "جب", "كرر", "رق", "حر"]
+            bot_sections = ["جمم", "ويكي", "مس", "اص", "شرط", "فكك", "صج", "شك", "جش", "دبل", "تر", "عكس", "فر", "E", "قص", "نص", "جب", "كرر", "رق", "حر"]
 
             # التحقق من أن الاختصار ليس اسم قسم موجود
             if shortcut in bot_sections:
@@ -7296,7 +7522,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
 
     # معالجة "ريست" مع أو بدون قسم معين
     if text == "ريست" or text.startswith("ريست "):
-        all_sections = ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب", "كرر", "خصص"]
+        all_sections = ["جمم", "ويكي", "مس", "اص", "صج", "شك", "جش", "قص", "نص", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب", "كرر", "خصص"]
 
         # التحقق من وجود قسم محدد
         parts = text.split()
@@ -7385,7 +7611,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
 
     if text.startswith("ريست "):
         section = text[5:].strip()
-        if section in ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب", "كرر"]:
+        if section in ["جمم", "ويكي", "مس", "اص", "صج", "شك", "جش", "قص", "نص", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب", "كرر"]:
             if section == "رق":
                 storage.save_preference(uid, "رق_عدد", None)
                 await u.message.reply_text(f"تم إعادة تعيين تفضيلات القسم ({section}) بنجاح\nالآن سيتم إرسال الأرقام بشكلها الطبيعي العشوائي")
@@ -7431,12 +7657,48 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
 
     command, word_count = extract_number_from_text(text)
 
-    game_commands = ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "فر", "E", "e", "رق", "حر", "جب", "كرر", "شرط", "فكك", "دبل", "تر", "عكس"]
+    game_commands = ["جمم", "ويكي", "مس", "اص", "صج", "شك", "جش", "قص", "نص", "فر", "E", "e", "رق", "حر", "جب", "كرر", "شرط", "فكك", "دبل", "تر", "عكس"]
     is_game_command = (command in game_commands or text in game_commands)
 
     if is_game_command:
         if not await can_bot_send(cid):
             return
+
+    # ============ قسم (اص) - جمل مس مزخرفة ============
+    if command == "اص" or text == "اص":
+        section = "اص"
+        storage.log_cmd("اص")
+
+        if word_count and 1 <= word_count <= 60:
+            storage.save_preference(uid, section, word_count)
+            storage.disable_section(uid, section)
+            sent = get_text_with_word_count(managers["اص"], word_count)
+            if sent:
+                sent = as_strip_to_arabic(sent)
+            if not sent:
+                sent = managers["اص"].get()
+            decorated = as_decorate_sentence(sent)
+            storage.del_session(cid, "اص")
+            storage.save_session(uid, cid, "اص", sent, time.time(), sent=True,
+                                 random_mode=False, watermarked_text=decorated)
+            await u.message.reply_text(f"تم الحين الكلمات {word_count} كلمة في الجملة")
+            await asyncio.sleep(0.5)
+            await u.message.reply_text(decorated)
+        else:
+            pref_count = storage.get_preference(uid, section)
+            if pref_count and 1 <= pref_count <= 60:
+                sent = get_text_with_word_count(managers["اص"], pref_count)
+                sent = as_strip_to_arabic(sent) if sent else None
+                if not sent:
+                    sent = managers["اص"].get()
+            else:
+                sent = managers["اص"].get()
+            decorated = as_decorate_sentence(sent)
+            storage.del_session(cid, "اص")
+            storage.save_session(uid, cid, "اص", sent, time.time(), sent=True,
+                                 random_mode=False, watermarked_text=decorated)
+            await u.message.reply_text(decorated)
+        return
 
     if command in ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "جب"] or text in ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "جب"]:
         section = command if word_count else text
@@ -7649,7 +7911,7 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
         return
 
     # معالج عام لتحديد عدد الكلمات لأي قسم (مثل: جمم 12، مق 15، إلخ)
-    all_sections = ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب", "كرر"]
+    all_sections = ["جمم", "ويكي", "مس", "اص", "صج", "شك", "جش", "قص", "نص", "شرط", "فكك", "دبل", "تر", "عكس", "فر", "E", "رق", "حر", "جب", "كرر"]
     for section in all_sections:
         if text.startswith(f"{section} "):
             try:
@@ -8210,7 +8472,17 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
 
         try:
             user_accuracy_on = is_accuracy_enabled_for(uid)
-            if typ in ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "جب", "حر"]:
+            if typ == "اص":
+                # قسم اص: لازم يكتب الجملة بشكلها العادي
+                # إذا كتب أي حرف مزخرف أو تطويل => لا تُحسب السرعة إطلاقاً
+                if as_user_used_fancy(text):
+                    await u.message.reply_text("اكتب الجملة بحروفها العادية بدون زخرفة ولا تطويل، وإلا ما تنحسب سرعتك")
+                    storage.del_session(cid, typ)
+                    continue
+                base_accuracy = compute_word_based_accuracy(orig, text, "arabic")
+                accuracy = base_accuracy
+                matched = True if user_accuracy_on else (base_accuracy == 100.0)
+            elif typ in ["جمم", "ويكي", "مس", "صج", "شك", "جش", "قص", "نص", "جب", "حر"]:
                 # دقة مبنية على الكلمات تسمح بتغيير الترتيب والتكرار الصحيح
                 base_accuracy = compute_word_based_accuracy(orig, text, "arabic")
                 all_words_present = base_accuracy == 100.0
@@ -8374,6 +8646,12 @@ async def handle_msg(u: Update, c: ContextTypes.DEFAULT_TYPE):
         elapsed = best_elapsed
         random_mode = best_match.get("random_mode", True)
         watermarked_text = best_match.get("watermarked_text")
+
+        # حماية إضافية لقسم اص: أي حرف مزخرف أو تطويل = لا سرعة
+        if typ == "اص" and as_user_used_fancy(text):
+            storage.del_session(cid, typ)
+            storage.save()
+            return
 
         # حساب الدقة للجملة المطابقة لتضمينها في الرد أو لتجاهل الإجابات الضعيفة
         accuracy = None
